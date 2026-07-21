@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import FormularioUsuario from './FormularioUsuario'
-import BotonesUsuario from './BotonesUsuario'
+import TablaUsuarios from './TablaUsuarios'
 
 export default async function UsuariosPage() {
   const supabase = await createClient()
@@ -14,29 +14,25 @@ export default async function UsuariosPage() {
   const { data: perfiles } = await supabase.from('perfiles').select('*').order('created_at')
 
   return (
-    <div className="p-8 grid gap-6">
-      <h1 className="text-xl font-bold">Usuarios</h1>
-      <FormularioUsuario />
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="text-sm text-gray-500">
-            <th className="border-b p-2">Nombre</th>
-            <th className="border-b p-2">Rol</th>
-            <th className="border-b p-2">Estado</th>
-            <th className="border-b p-2">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(perfiles ?? []).map((p: any) => (
-            <tr key={p.id} className={p.activo ? '' : 'opacity-50'}>
-              <td className="border-b p-2 font-semibold">{p.nombre}</td>
-              <td className="border-b p-2 capitalize">{p.rol}</td>
-              <td className="border-b p-2">{p.activo ? '● Activo' : '● Inactivo'}</td>
-              <td className="border-b p-2"><BotonesUsuario id={p.id} activo={p.activo} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      {/* Cabecera de la página */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Usuarios</h1>
+        <p className="text-sm text-[var(--nav-text)]">
+          Administra las cuentas, roles y accesos activos de los pilotos y personal de administración.
+        </p>
+      </div>
+
+      {/* Formulario de Registro */}
+      <div className="bg-[var(--nav-bg)] border border-[var(--nav-border)] rounded-2xl p-5 sm:p-6 shadow-xs max-w-md">
+        <FormularioUsuario />
+      </div>
+
+      {/* Listado y Búsqueda */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-[var(--foreground)]">Directorio de Usuarios</h2>
+        <TablaUsuarios perfiles={(perfiles ?? []) as any} />
+      </div>
     </div>
   )
 }

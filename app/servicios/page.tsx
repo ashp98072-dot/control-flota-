@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import FormularioServicio from './FormularioServicio'
-import FiltroVehiculo from './FiltroVehiculo'
-import BotonEliminarServicio from './BotonEliminarServicio'
-import BotonEditarServicio from './BotonEditarServicio'
+import TablaServicios from './TablaServicios'
 
 export default async function ServiciosPage({
   searchParams,
@@ -47,75 +45,31 @@ export default async function ServiciosPage({
   const { data: servicios, error } = await query
 
   return (
-    <div className="p-8 grid gap-8">
-      <h1 className="text-xl font-bold">Servicios</h1>
-
-      <FormularioServicio vehiculos={vehiculos} />
-
-      <div className="flex items-center gap-2">
-        <label>Filtrar por vehículo:</label>
-        <FiltroVehiculo vehiculos={vehiculos} vehiculoActual={vehiculo} />
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      {/* Cabecera de la página */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Servicios</h1>
+        <p className="text-sm text-[var(--nav-text)]">
+          Registra y audita mantenimientos preventivos y reparaciones correctivas de la flota.
+        </p>
       </div>
 
-      {error && <p className="text-red-500">Error cargando servicios: {error.message}</p>}
+      {/* Formulario de registro */}
+      <div className="bg-[var(--nav-bg)] border border-[var(--nav-border)] rounded-2xl p-5 sm:p-6 shadow-xs max-w-xl">
+        <FormularioServicio vehiculos={vehiculos} />
+      </div>
 
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="text-sm text-gray-500">
-            <th className="border-b p-2">Placa</th>
-            <th className="border-b p-2">Fecha</th>
-            <th className="border-b p-2">Km</th>
-            <th className="border-b p-2">Tipo</th>
-            <th className="border-b p-2">Trabajo</th>
-            <th className="border-b p-2">Costo</th>
-            <th className="border-b p-2">Días en taller</th>
-            <th className="border-b p-2">Motivo taller</th>
-            <th className="border-b p-2">Observaciones</th>
-            <th className="border-b p-2">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(servicios ?? []).map((s: any) => (
-            <tr key={s.id}>
-              <td className="border-b p-2 font-semibold">{s.vehiculos?.placa}</td>
-              <td className="border-b p-2">{s.fecha}</td>
-              <td className="border-b p-2">{s.km_al_servicio}</td>
-              <td className="border-b p-2">
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    s.tipo === 'reparacion'
-                      ? 'bg-orange-500/15 text-orange-500'
-                      : 'bg-blue-500/15 text-blue-500'
-                  }`}
-                >
-                  {s.tipo === 'reparacion' ? 'Reparación' : 'Mantenimiento'}
-                </span>
-              </td>
-              <td className="border-b p-2">{s.tipo_trabajo}</td>
-              <td className="border-b p-2">Q{Number(s.costo).toFixed(2)}</td>
-              <td className="border-b p-2">{s.dias_en_taller ?? '—'}</td>
-              <td className="border-b p-2">{s.motivo_taller ?? '—'}</td>
-              <td className="border-b p-2">{s.observaciones}</td>
-              <td className="border-b p-2">
-                <div className="flex gap-2">
-                  <BotonEditarServicio
-                    servicio={{
-                      id: s.id,
-                      fecha: s.fecha,
-                      km_al_servicio: s.km_al_servicio,
-                      tipo_trabajo: s.tipo_trabajo,
-                      tipo: s.tipo,
-                      costo: s.costo,
-                      observaciones: s.observaciones,
-                    }}
-                  />
-                  <BotonEliminarServicio id={s.id} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Tabla e historial con filtros interactivos */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-[var(--foreground)]">Historial de Servicios</h2>
+        {error && <p className="text-red-500 text-sm">Error cargando servicios: {error.message}</p>}
+        
+        <TablaServicios
+          servicios={(servicios ?? []) as any}
+          vehiculos={vehiculos}
+          vehiculoActual={vehiculo}
+        />
+      </div>
     </div>
   )
 }
