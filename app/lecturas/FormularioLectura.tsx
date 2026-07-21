@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { registrarLectura } from './actions'
+import { Gauge, Calendar, Car, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 type Vehiculo = { id: string; placa: string; marca: string; modelo: string }
 
@@ -19,8 +20,6 @@ export default function FormularioLectura({
   const formRef = useRef<HTMLFormElement>(null)
   const kmInputRef = useRef<HTMLInputElement>(null)
 
-  // Si se llega desde el link "Registrar km" del dashboard, enfoca
-  // directamente el campo de km ya que el vehículo viene preseleccionado.
   useEffect(() => {
     if (vehiculoInicial) {
       kmInputRef.current?.focus()
@@ -43,45 +42,97 @@ export default function FormularioLectura({
   }
 
   return (
-    <form ref={formRef} action={handleSubmit} className="grid gap-3 max-w-md border p-4 rounded">
-      <h2 className="font-bold">Registrar lectura de kilometraje</h2>
+    <form ref={formRef} action={handleSubmit} className="space-y-4">
+      <div>
+        <h2 className="font-bold text-base text-[var(--foreground)] flex items-center gap-2">
+          <span>Registrar Lectura de Kilometraje</span>
+        </h2>
+        <p className="text-xs text-[var(--nav-text)] mt-1 leading-relaxed">
+          Ingresa la lectura actual del odómetro. El sistema comparará este dato con la referencia
+          de mantenimiento para alertar si el vehículo requiere servicio.
+        </p>
+      </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      {ok && <p className="text-green-500 text-sm">Lectura registrada</p>}
+      {error && (
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <select
-        name="vehiculo_id"
-        required
-        className="border p-2 rounded"
-        value={vehiculoId}
-        onChange={(e) => setVehiculoId(e.target.value)}
-      >
-        <option value="">Selecciona vehículo (placa)</option>
-        {vehiculos.map((v) => (
-          <option key={v.id} value={v.id}>
-            {v.placa} — {v.marca} {v.modelo}
-          </option>
-        ))}
-      </select>
+      {ok && (
+        <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-xs flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          <span>Lectura de kilometraje guardada exitosamente.</span>
+        </div>
+      )}
 
-      <input type="date" name="fecha" required className="border p-2 rounded" />
+      {/* Campo Vehículo */}
+      <div>
+        <label className="block text-xs font-bold text-[var(--foreground)] uppercase tracking-wider mb-1">
+          Vehículo
+        </label>
+        <select
+          name="vehiculo_id"
+          required
+          value={vehiculoId}
+          onChange={(e) => setVehiculoId(e.target.value)}
+          className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--input-border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/10"
+        >
+          <option value="">-- Selecciona unidad por placa --</option>
+          {vehiculos.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.placa} — {v.marca} {v.modelo}
+            </option>
+          ))}
+        </select>
+        <p className="text-[11px] text-[var(--nav-text)] mt-1">
+          Elige la unidad asignada a la ruta o inspección del día.
+        </p>
+      </div>
 
-      <input
-        ref={kmInputRef}
-        type="number"
-        name="km_actual"
-        placeholder="Km actual"
-        required
-        min={1}
-        className="border p-2 rounded"
-      />
+      {/* Campo Fecha */}
+      <div>
+        <label className="block text-xs font-bold text-[var(--foreground)] uppercase tracking-wider mb-1">
+          Fecha de Lectura
+        </label>
+        <input
+          type="date"
+          name="fecha"
+          required
+          defaultValue={new Date().toISOString().split('T')[0]}
+          className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--input-border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/10"
+        />
+        <p className="text-[11px] text-[var(--nav-text)] mt-1">
+          Fecha exacta en la que se tomó la cifra del odómetro.
+        </p>
+      </div>
+
+      {/* Campo Kilometraje */}
+      <div>
+        <label className="block text-xs font-bold text-[var(--foreground)] uppercase tracking-wider mb-1">
+          Kilometraje Actual (km)
+        </label>
+        <input
+          ref={kmInputRef}
+          type="number"
+          name="km_actual"
+          placeholder="Ejemplo: 125000"
+          required
+          min={1}
+          className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--input-border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/10"
+        />
+        <p className="text-[11px] text-[var(--nav-text)] mt-1">
+          Ingresa la cifra completa de kilómetros sin puntos ni comas.
+        </p>
+      </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="bg-black text-white p-2 rounded disabled:opacity-50"
+        className="w-full py-2.5 px-4 font-bold text-xs rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 shadow-xs"
       >
-        {loading ? 'Guardando...' : 'Guardar lectura'}
+        {loading ? 'Guardando...' : 'Guardar Lectura'}
       </button>
     </form>
   )
