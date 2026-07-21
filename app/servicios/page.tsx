@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import FormularioServicio from './FormularioServicio'
 import TablaServicios from './TablaServicios'
+import PanelTaller from './PanelTaller'
 
 export default async function ServiciosPage({
   searchParams,
@@ -17,7 +18,7 @@ export default async function ServiciosPage({
 
   const { data: tallerInfo } = await supabase
     .from('vehiculos')
-    .select('id, en_taller, fecha_entrada_taller')
+    .select('id, en_taller, fecha_entrada_taller, motivo_taller')
 
   const tallerPorId = new Map<any, any>((tallerInfo ?? []).map((t: any) => [t.id, t]))
 
@@ -31,6 +32,7 @@ export default async function ServiciosPage({
     fecha_ultimo_servicio: v.fecha_ultimo_servicio,
     en_taller: tallerPorId.get(v.vehiculo_id)?.en_taller ?? false,
     fecha_entrada_taller: tallerPorId.get(v.vehiculo_id)?.fecha_entrada_taller ?? null,
+    motivo_taller: tallerPorId.get(v.vehiculo_id)?.motivo_taller ?? null,
   }))
 
   let query = supabase
@@ -48,11 +50,14 @@ export default async function ServiciosPage({
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* Cabecera de la página */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Servicios</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">Servicios y Taller</h1>
         <p className="text-sm text-[var(--nav-text)]">
-          Registra y audita mantenimientos preventivos y reparaciones correctivas de la flota.
+          Administra los ingresos/salidas del taller y registra mantenimientos preventivos o correctivos.
         </p>
       </div>
+
+      {/* Control Rápido de Taller */}
+      <PanelTaller vehiculos={vehiculos} />
 
       {/* Formulario de registro */}
       <div className="bg-[var(--nav-bg)] border border-[var(--nav-border)] rounded-2xl p-5 sm:p-6 shadow-xs max-w-xl">
