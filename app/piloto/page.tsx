@@ -78,7 +78,7 @@ export default async function PilotoPage() {
             Módulo del Piloto
           </h1>
           <p className="text-xs text-[var(--nav-text)] mt-1">
-            Hola, <strong className="text-[var(--foreground)]">{nombrePiloto}</strong>. Registra la entrada y salida de unidades.
+            Módulo de Control de Unidades. Registra la salida o entrada e ingresa tu nombre en cada formulario.
           </p>
         </div>
         <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 font-bold">

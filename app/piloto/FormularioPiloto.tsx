@@ -40,7 +40,7 @@ type RegistroHistorial = {
 export default function FormularioPiloto({
   vehiculos,
   viajeAbierto,
-  nombrePilotoDefault = 'Piloto',
+  nombrePilotoDefault = '',
   historialReciente = [],
 }: {
   vehiculos: VehiculoConKm[]
@@ -51,7 +51,9 @@ export default function FormularioPiloto({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedVehiculoId, setSelectedVehiculoId] = useState<string>('')
-  const [pilotoNombre, setPilotoNombre] = useState<string>(nombrePilotoDefault)
+  const [pilotoNombre, setPilotoNombre] = useState<string>(
+    viajeAbierto?.piloto_nombre || ''
+  )
   const [kmSalidaInput, setKmSalidaInput] = useState<string>('')
   const [kmLlegadaInput, setKmLlegadaInput] = useState<string>('')
   const router = useRouter()
@@ -75,7 +77,12 @@ export default function FormularioPiloto({
     const res = await registrarSalida(formData)
     setLoading(false)
     if (res?.error) setError(res.error)
-    else router.refresh()
+    else {
+      setPilotoNombre('')
+      setSelectedVehiculoId('')
+      setKmSalidaInput('')
+      router.refresh()
+    }
   }
 
   async function handleLlegada(formData: FormData) {
@@ -84,7 +91,11 @@ export default function FormularioPiloto({
     const res = await registrarLlegada(formData)
     setLoading(false)
     if (res?.error) setError(res.error)
-    else router.refresh()
+    else {
+      setPilotoNombre('')
+      setKmLlegadaInput('')
+      router.refresh()
+    }
   }
 
   // Calculate distance traveled for active trip
@@ -260,7 +271,7 @@ export default function FormularioPiloto({
               required
               value={pilotoNombre}
               onChange={(e) => setPilotoNombre(e.target.value)}
-              placeholder="Nombre completo del piloto"
+              placeholder="Escribe tu nombre completo (ej: Mario Estrada)"
               className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--input-border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
