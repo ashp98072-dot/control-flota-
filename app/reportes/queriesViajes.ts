@@ -38,10 +38,10 @@ export async function obtenerViajes({
 
   let { data, error } = await query
 
-  if (error && error.message?.includes("'destino'")) {
+  if (error) {
     let queryFallback = supabase
       .from('registros_viaje')
-      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculo_id, piloto_id, piloto_nombre, observaciones, vehiculos(placa)')
+      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculo_id, piloto_id, observaciones, vehiculos(placa)')
       .gte('fecha', desde)
       .lte('fecha', hasta)
       .order('fecha', { ascending: false })

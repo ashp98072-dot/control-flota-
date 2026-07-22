@@ -41,10 +41,10 @@ export default async function PilotoPage() {
     .eq('estado', 'abierto')
     .maybeSingle()
 
-  if (errViajeAbierto && errViajeAbierto.message?.includes("'destino'")) {
+  if (errViajeAbierto) {
     const { data: retryViaje } = await supabase
       .from('registros_viaje')
-      .select('id, km_salida, hora_salida, piloto_nombre, vehiculos(id, placa, marca, modelo)')
+      .select('id, km_salida, hora_salida, vehiculos(id, placa, marca, modelo)')
       .eq('piloto_id', user.id)
       .eq('estado', 'abierto')
       .maybeSingle()
@@ -58,10 +58,10 @@ export default async function PilotoPage() {
     .order('hora_salida', { ascending: false })
     .limit(5)
 
-  if (errHistorial && errHistorial.message?.includes("'destino'")) {
+  if (errHistorial) {
     const { data: retryHistorial } = await supabase
       .from('registros_viaje')
-      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, piloto_nombre, estado, vehiculos(placa, marca, modelo)')
+      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculos(placa, marca, modelo)')
       .eq('piloto_id', user.id)
       .order('hora_salida', { ascending: false })
       .limit(5)

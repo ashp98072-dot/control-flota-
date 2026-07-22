@@ -24,7 +24,7 @@ export async function registrarSalida(formData: FormData) {
     })
 
     if (rpcErr) {
-      // Fallback direct insert
+      // Fallback direct insert with progressive column retry
       const hoy = new Date().toISOString().split('T')[0]
       const ahora = new Date().toISOString()
       
@@ -39,8 +39,9 @@ export async function registrarSalida(formData: FormData) {
         destino
       })
 
-      if (insErr && insErr.message?.includes("'destino'")) {
-        const { error: retryErr } = await supabase.from('registros_viaje').insert({
+      if (insErr) {
+        // Retry 1: Without 'destino'
+        const { error: retryErr1 } = await supabase.from('registros_viaje').insert({
           vehiculo_id,
           piloto_id: user?.id || 'piloto-id',
           piloto_nombre,
@@ -49,11 +50,27 @@ export async function registrarSalida(formData: FormData) {
           fecha: hoy,
           estado: 'abierto'
         })
-        insErr = retryErr
+        insErr = retryErr1
+      }
+
+      if (insErr) {
+        // Retry 2: Without 'piloto_nombre' and 'destino'
+        const { error: retryErr2 } = await supabase.from('registros_viaje').insert({
+          vehiculo_id,
+          piloto_id: user?.id || 'piloto-id',
+          km_salida,
+          hora_salida: ahora,
+          fecha: hoy,
+          estado: 'abierto'
+        })
+        insErr = retryErr2
       }
 
       if (insErr) {
         console.error('Error insertando viaje:', insErr)
+        if (insErr.message?.includes('schema cache')) {
+          return { error: 'Error de caché en la base de datos de Supabase. Copia y ejecuta el archivo supabase_schema.sql en el SQL Editor de Supabase para actualizar las columnas y la caché.' }
+        }
         return { error: insErr.message }
       }
 

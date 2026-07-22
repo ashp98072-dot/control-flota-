@@ -74,8 +74,15 @@ CREATE TABLE IF NOT EXISTS public.registros_viaje (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Asegurar columna destino si la tabla ya existía de ejecuciones previas:
+-- Asegurar columnas si la tabla ya existía de ejecuciones previas:
+ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS piloto_nombre TEXT;
 ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS destino TEXT;
+ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS observaciones TEXT;
+ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS hora_salida TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS hora_llegada TIMESTAMPTZ;
+
+-- Recargar la caché de esquemas de PostgREST en Supabase:
+NOTIFY pgrst, 'reload schema';
 
 -- 6. VISTA ESTADO_FLOTA
 DROP VIEW IF EXISTS public.estado_flota CASCADE;
