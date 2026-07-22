@@ -36,7 +36,23 @@ export async function obtenerViajes({
 
   if (vehiculoId) query = query.eq('vehiculo_id', vehiculoId)
 
-  const { data, error } = await query
+  let { data, error } = await query
+
+  if (error && error.message?.includes("'destino'")) {
+    let queryFallback = supabase
+      .from('registros_viaje')
+      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculo_id, piloto_id, piloto_nombre, observaciones, vehiculos(placa)')
+      .gte('fecha', desde)
+      .lte('fecha', hasta)
+      .order('fecha', { ascending: false })
+      .order('hora_salida', { ascending: false })
+
+    if (vehiculoId) queryFallback = queryFallback.eq('vehiculo_id', vehiculoId)
+    const fallbackRes = await queryFallback
+    data = fallbackRes.data
+    error = fallbackRes.error
+  }
+
   if (error) throw new Error(error.message)
 
   const filas = (data ?? []) as any[]

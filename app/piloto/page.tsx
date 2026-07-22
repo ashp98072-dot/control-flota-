@@ -34,19 +34,39 @@ export default async function PilotoPage() {
     km_actual: kmPorVehiculo.get(v.id) ?? 0,
   }))
 
-  const { data: viajeAbierto } = await supabase
+  let { data: viajeAbierto, error: errViajeAbierto } = await supabase
     .from('registros_viaje')
     .select('id, km_salida, hora_salida, piloto_nombre, destino, vehiculos(id, placa, marca, modelo)')
     .eq('piloto_id', user.id)
     .eq('estado', 'abierto')
     .maybeSingle()
 
-  const { data: historialReciente } = await supabase
+  if (errViajeAbierto && errViajeAbierto.message?.includes("'destino'")) {
+    const { data: retryViaje } = await supabase
+      .from('registros_viaje')
+      .select('id, km_salida, hora_salida, piloto_nombre, vehiculos(id, placa, marca, modelo)')
+      .eq('piloto_id', user.id)
+      .eq('estado', 'abierto')
+      .maybeSingle()
+    viajeAbierto = retryViaje
+  }
+
+  let { data: historialReciente, error: errHistorial } = await supabase
     .from('registros_viaje')
     .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, piloto_nombre, estado, destino, vehiculos(placa, marca, modelo)')
     .eq('piloto_id', user.id)
     .order('hora_salida', { ascending: false })
     .limit(5)
+
+  if (errHistorial && errHistorial.message?.includes("'destino'")) {
+    const { data: retryHistorial } = await supabase
+      .from('registros_viaje')
+      .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, piloto_nombre, estado, vehiculos(placa, marca, modelo)')
+      .eq('piloto_id', user.id)
+      .order('hora_salida', { ascending: false })
+      .limit(5)
+    historialReciente = retryHistorial
+  }
 
   const nombrePiloto = perfil?.nombre || user.user_metadata?.nombre || 'Piloto'
 

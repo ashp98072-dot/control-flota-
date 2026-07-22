@@ -28,7 +28,7 @@ export async function registrarSalida(formData: FormData) {
       const hoy = new Date().toISOString().split('T')[0]
       const ahora = new Date().toISOString()
       
-      const { error: insErr } = await supabase.from('registros_viaje').insert({
+      let { error: insErr } = await supabase.from('registros_viaje').insert({
         vehiculo_id,
         piloto_id: user?.id || 'piloto-id',
         piloto_nombre,
@@ -38,6 +38,19 @@ export async function registrarSalida(formData: FormData) {
         estado: 'abierto',
         destino
       })
+
+      if (insErr && insErr.message?.includes("'destino'")) {
+        const { error: retryErr } = await supabase.from('registros_viaje').insert({
+          vehiculo_id,
+          piloto_id: user?.id || 'piloto-id',
+          piloto_nombre,
+          km_salida,
+          hora_salida: ahora,
+          fecha: hoy,
+          estado: 'abierto'
+        })
+        insErr = retryErr
+      }
 
       if (insErr) {
         console.error('Error insertando viaje:', insErr)

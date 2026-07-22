@@ -74,6 +74,9 @@ CREATE TABLE IF NOT EXISTS public.registros_viaje (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Asegurar columna destino si la tabla ya existía de ejecuciones previas:
+ALTER TABLE public.registros_viaje ADD COLUMN IF NOT EXISTS destino TEXT;
+
 -- 6. VISTA ESTADO_FLOTA
 DROP VIEW IF EXISTS public.estado_flota CASCADE;
 CREATE OR REPLACE VIEW public.estado_flota AS
