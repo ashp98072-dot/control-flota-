@@ -49,7 +49,7 @@ export async function crearUsuario(formData: FormData) {
     }
 
     const supabase = await createClient()
-    const { error: errorPerfil } = await supabase.from('perfiles').insert({ id: creado.user.id, nombre, rol })
+    const { error: errorPerfil } = await supabase.from('perfiles').upsert({ id: creado.user.id, nombre, rol, activo: true })
 
     if (errorPerfil) {
       if (admin.auth?.admin?.deleteUser) {

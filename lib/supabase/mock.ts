@@ -264,12 +264,23 @@ class MockQueryBuilder {
 
   async insert(record: any) {
     const newRecord = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: record.id || Math.random().toString(36).substr(2, 9),
       created_at: new Date().toISOString(),
       ...record
     }
     globalStorage.addRecord(this.table, newRecord)
     return { data: newRecord, error: null }
+  }
+
+  async upsert(record: any) {
+    const list = globalStorage.getTableData(this.table)
+    const existing = record.id ? list.find((x: any) => x.id === record.id) : null
+    if (existing) {
+      globalStorage.updateRecord(this.table, record.id, record)
+      return { data: record, error: null }
+    } else {
+      return this.insert(record)
+    }
   }
 
   async update(record: any) {
