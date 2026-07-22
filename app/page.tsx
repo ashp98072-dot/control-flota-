@@ -1,8 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
+import { obtenerPerfilActual } from '@/lib/perfil'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Dashboard from './Dashboard'
 
 export default async function Home() {
+  const perfil = await obtenerPerfilActual()
+  if (perfil?.rol === 'piloto') {
+    redirect('/piloto')
+  }
+
   const supabase = await createClient()
 
   const { data: vehiculosInfo } = await supabase

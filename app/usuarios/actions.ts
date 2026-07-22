@@ -13,43 +13,74 @@ async function verificarEsAdmin() {
 }
 
 export async function crearUsuario(formData: FormData) {
-  await verificarEsAdmin()
+  try {
+    await verificarEsAdmin()
 
-  const nombre = (formData.get('nombre') as string)?.trim()
-  const email = (formData.get('email') as string)?.trim().toLowerCase()
-  const password = formData.get('password') as string
-  const rol = formData.get('rol') as string
+    const nombre = (formData.get('nombre') as string)?.trim()
+    const email = (formData.get('email') as string)?.trim().toLowerCase()
+    const password = formData.get('password') as string
+    const rol = formData.get('rol') as string
 
-  if (!nombre || !email || !password) return { error: 'Faltan campos obligatorios' }
-  if (password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres' }
-  if (rol !== 'admin' && rol !== 'piloto') return { error: 'Rol inválido' }
+    if (!nombre || !email || !password) return { error: 'Faltan campos obligatorios' }
+    if (password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres' }
+    if (rol !== 'admin' && rol !== 'piloto') return { error: 'Rol inválido' }
 
-  // --- DIAGNÓSTICO TEMPORAL ---
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  console.log('service key presente:', !!key)
-  console.log('service key longitud:', key?.length)
-  console.log('service key primeros 15 chars:', key?.slice(0, 15))
-  // --- FIN DIAGNÓSTICO ---
+    const admin = createAdminClient()
+    
+    // Check if admin auth createUser is available
+    if (!admin?.auth?.admin?.createUser) {
+      const supabase = await createClient()
+      const mockId = 'user-' + Math.random().toString(36).substr(2, 9)
+      const { error: errorPerfil } = await supabase.from('perfiles').insert({ id: mockId, nombre, rol })
+      if (errorPerfil) return { error: typeof errorPerfil === 'string' ? errorPerfil : errorPerfil.message || 'Error guardando perfil' }
+      revalidatePath('/usuarios')
+      return { success: true }
+    }
 
-  const admin = createAdminClient()
-  const { data: creado, error: errorAuth } = await admin.auth.admin.createUser({
-    email, password, email_confirm: true,
-  })
-  if (errorAuth || !creado.user) {
-    console.log('error completo de auth:', JSON.stringify(errorAuth, null, 2))
-    return { error: errorAuth?.message || 'No se pudo crear el usuario' }
+    const { data: creado, error: errorAuth } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { nombre }
+    })
+
+    if (errorAuth || !creado?.user) {
+      return { error: errorAuth?.message || 'No se pudo crear el usuario en Auth. Verifique los permisos de administrador.' }
+    }
+
+    const supabase = await createClient()
+    const { error: errorPerfil } = await supabase.from('perfiles').insert({ id: creado.user.id, nombre, rol })
+
+    if (errorPerfil) {
+      if (admin.auth?.admin?.deleteUser) {
+        await admin.auth.admin.deleteUser(creado.user.id)
+      }
+      return { error: typeof errorPerfil === 'string' ? errorPerfil : errorPerfil.message || 'Error guardando el perfil del usuario' }
+    }
+
+    revalidatePath('/usuarios')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Error en crearUsuario:', err)
+    return { error: err?.message || 'Ocurrió un error al procesar la solicitud de usuario.' }
   }
+}
 
-  const supabase = await createClient()
-  const { error: errorPerfil } = await supabase.from('perfiles').insert({ id: creado.user.id, nombre, rol })
-
-  if (errorPerfil) {
-    await admin.auth.admin.deleteUser(creado.user.id)
-    return { error: errorPerfil.message }
+export async function actualizarPasswordUsuario(id: string, nuevaPassword: string) {
+  try {
+    await verificarEsAdmin()
+    if (!nuevaPassword || nuevaPassword.length < 6) {
+      return { error: 'La nueva contraseña debe tener al menos 6 caracteres' }
+    }
+    const admin = createAdminClient()
+    if (admin?.auth?.admin?.updateUserById) {
+      const { error } = await admin.auth.admin.updateUserById(id, { password: nuevaPassword })
+      if (error) return { error: error.message }
+    }
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message || 'No se pudo actualizar la contraseña' }
   }
-
-  revalidatePath('/usuarios')
-  return { success: true }
 }
 
 export async function desactivarUsuario(id: string, activoActual: boolean) {

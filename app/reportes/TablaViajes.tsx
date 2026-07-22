@@ -19,7 +19,8 @@ export default function TablaViajes({ viajes }: { viajes: ViajeReporte[] }) {
           <thead>
             <tr className="text-xs text-[var(--muted)]">
               <th className="border-b border-[var(--card-border)] p-2">Placa</th>
-              <th className="border-b border-[var(--card-border)] p-2">Piloto</th>
+              <th className="border-b border-[var(--card-border)] p-2">Piloto / Responsable</th>
+              <th className="border-b border-[var(--card-border)] p-2">Destino / Ruta</th>
               <th className="border-b border-[var(--card-border)] p-2">Salida</th>
               <th className="border-b border-[var(--card-border)] p-2">Km salida</th>
               <th className="border-b border-[var(--card-border)] p-2">Llegada</th>
@@ -32,12 +33,15 @@ export default function TablaViajes({ viajes }: { viajes: ViajeReporte[] }) {
             {viajes.map((v) => (
               <tr key={v.id}>
                 <td className="border-b border-[var(--card-border)] p-2 font-medium">{v.placa}</td>
-                <td className="border-b border-[var(--card-border)] p-2">{v.piloto}</td>
+                <td className="border-b border-[var(--card-border)] p-2 font-semibold">{v.piloto}</td>
+                <td className="border-b border-[var(--card-border)] p-2 text-xs">{v.destino || '—'}</td>
                 <td className="border-b border-[var(--card-border)] p-2">{formatearHora(v.hora_salida)}</td>
                 <td className="border-b border-[var(--card-border)] p-2">{v.km_salida.toLocaleString()}</td>
                 <td className="border-b border-[var(--card-border)] p-2">{formatearHora(v.hora_llegada)}</td>
                 <td className="border-b border-[var(--card-border)] p-2">{v.km_llegada != null ? v.km_llegada.toLocaleString() : '—'}</td>
-                <td className="border-b border-[var(--card-border)] p-2">{v.km_recorridos != null ? v.km_recorridos.toLocaleString() : '—'}</td>
+                <td className="border-b border-[var(--card-border)] p-2 font-bold text-emerald-600 dark:text-emerald-400">
+                  {v.km_recorridos != null ? `+${v.km_recorridos.toLocaleString()} km` : '—'}
+                </td>
                 <td className="border-b border-[var(--card-border)] p-2">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                     v.estado === 'abierto' ? 'bg-yellow-500/15 text-yellow-500' : 'bg-green-500/15 text-green-500'

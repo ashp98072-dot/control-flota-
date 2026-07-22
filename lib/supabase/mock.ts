@@ -39,6 +39,28 @@ export interface LecturaKm {
   fecha: string
   km_actual: number
   created_at: string
+  conductor?: string
+  notas?: string
+}
+
+export interface RegistroViaje {
+  id: string
+  fecha: string
+  vehiculo_id: string
+  piloto_id: string
+  piloto_nombre?: string
+  km_salida: number
+  km_llegada?: number | null
+  hora_salida: string
+  hora_llegada?: string | null
+  estado: 'abierto' | 'cerrado'
+  destino?: string | null
+  observaciones?: string | null
+  vehiculos?: {
+    placa: string
+    marca: string
+    modelo: string
+  }
 }
 
 export interface Servicio {
@@ -80,6 +102,11 @@ class MockDatabase {
 
   servicios: Servicio[] = [
     { id: 's1', vehiculo_id: 'v2', fecha: '2026-06-05', km_al_servicio: 10000, tipo_trabajo: 'Cambio de aceite y filtros', tipo: 'mantenimiento', costo: 1500, observaciones: 'Filtro original Hino', dias_en_taller: 1, motivo_taller: null }
+  ]
+
+  registros_viaje: RegistroViaje[] = [
+    { id: 'viaje-1', fecha: '2026-07-21', vehiculo_id: 'v1', piloto_id: 'piloto-id', piloto_nombre: 'Juan Pérez (Piloto)', km_salida: 4500, km_llegada: 4800, hora_salida: '2026-07-21T07:30:00Z', hora_llegada: '2026-07-21T17:00:00Z', estado: 'cerrado', destino: 'Ruta Sur - Escuintla' },
+    { id: 'viaje-2', fecha: '2026-07-22', vehiculo_id: 'v3', piloto_id: 'piloto-id', piloto_nombre: 'Juan Pérez (Piloto)', km_salida: 8200, km_llegada: null, hora_salida: '2026-07-22T08:00:00Z', hora_llegada: null, estado: 'abierto', destino: 'Ruta Nororiente - Zacapa' }
   ]
 
   // Dynamic View: estado_flota
@@ -128,6 +155,15 @@ class MockDatabase {
         }
       })
     }
+    if (table === 'registros_viaje') {
+      return this.registros_viaje.map(r => {
+        const v = this.vehiculos.find(veh => veh.id === r.vehiculo_id)
+        return {
+          ...r,
+          vehiculos: v ? { placa: v.placa, marca: v.marca, modelo: v.modelo } : undefined
+        }
+      })
+    }
     if (table === 'estado_flota') return this.getEstadoFlota()
     return []
   }
@@ -147,6 +183,7 @@ class MockDatabase {
       this.lecturas_km.push(record)
     }
     else if (table === 'servicios') this.servicios.push(record)
+    else if (table === 'registros_viaje') this.registros_viaje.push(record)
   }
 
   updateRecord(table: string, id: string, record: any) {
@@ -162,6 +199,7 @@ class MockDatabase {
     else if (table === 'vehiculos') this.vehiculos = this.vehiculos.filter(x => x.id !== id)
     else if (table === 'lecturas_km') this.lecturas_km = this.lecturas_km.filter(x => x.id !== id)
     else if (table === 'servicios') this.servicios = this.servicios.filter(x => x.id !== id)
+    else if (table === 'registros_viaje') this.registros_viaje = this.registros_viaje.filter(x => x.id !== id)
   }
 }
 
@@ -254,37 +292,94 @@ class MockQueryBuilder {
   }
 }
 
+let currentMockUser: any = {
+  id: 'admin-id',
+  email: 'admin@controlflota.com',
+  user_metadata: { nombre: 'Administrador Principal' }
+}
+
 export const mockSupabase = {
   from(table: string) {
     return new MockQueryBuilder(table)
   },
 
+  async rpc(fnName: string, params: any) {
+    if (fnName === 'registrar_salida_viaje') {
+      const user = currentMockUser
+      const piloto = globalStorage.perfiles.find((p: any) => p.id === user?.id) || { nombre: 'Piloto' }
+      const viaje = {
+        id: 'viaje-' + Math.random().toString(36).substr(2, 8),
+        fecha: new Date().toISOString().split('T')[0],
+        vehiculo_id: params.p_vehiculo_id,
+        piloto_id: user?.id || 'piloto-id',
+        piloto_nombre: params.p_piloto_nombre || piloto.nombre,
+        km_salida: Number(params.p_km_salida),
+        hora_salida: new Date().toISOString(),
+        estado: 'abierto',
+        destino: params.p_destino || null
+      }
+      globalStorage.addRecord('registros_viaje', viaje)
+      globalStorage.addRecord('lecturas_km', {
+        id: 'l-' + Math.random().toString(36).substr(2, 8),
+        vehiculo_id: params.p_vehiculo_id,
+        fecha: new Date().toISOString().split('T')[0],
+        km_actual: Number(params.p_km_salida),
+        created_at: new Date().toISOString(),
+        conductor: viaje.piloto_nombre,
+        notas: `Salida de viaje${viaje.destino ? ` (${viaje.destino})` : ''}`
+      })
+      return { data: viaje, error: null }
+    }
+
+    if (fnName === 'registrar_llegada_viaje') {
+      const viaje = globalStorage.registros_viaje.find((v: any) => v.id === params.p_viaje_id)
+      if (viaje) {
+        viaje.km_llegada = Number(params.p_km_llegada)
+        viaje.hora_llegada = new Date().toISOString()
+        viaje.estado = 'cerrado'
+        viaje.observaciones = params.p_observaciones || null
+
+        globalStorage.addRecord('lecturas_km', {
+          id: 'l-' + Math.random().toString(36).substr(2, 8),
+          vehiculo_id: viaje.vehiculo_id,
+          fecha: new Date().toISOString().split('T')[0],
+          km_actual: Number(params.p_km_llegada),
+          created_at: new Date().toISOString(),
+          conductor: viaje.piloto_nombre || 'Piloto',
+          notas: `Llegada de viaje${viaje.observaciones ? ` (${viaje.observaciones})` : ''}`
+        })
+      }
+      return { data: viaje, error: null }
+    }
+    return { data: null, error: null }
+  },
+
   auth: {
     async getUser() {
-      // Defaults to the Mock Admin user for development convenience
       return {
-        data: {
-          user: {
-            id: 'admin-id',
-            email: 'admin@controlflota.com',
-            user_metadata: { nombre: 'Administrador Principal' }
-          }
-        },
+        data: { user: currentMockUser },
         error: null
       }
     },
 
     async signInWithPassword({ email }: { email: string }) {
-      const user = globalStorage.perfiles.find((p: Perfil) => p.nombre.toLowerCase().includes(email.split('@')[0]) || p.id === 'admin-id')
+      const emailLower = email.toLowerCase()
+      let user = globalStorage.perfiles.find((p: Perfil) => p.nombre.toLowerCase().includes(emailLower.split('@')[0]))
+      if (!user) {
+        if (emailLower.includes('piloto')) {
+          user = globalStorage.perfiles.find((p: Perfil) => p.rol === 'piloto')
+        } else {
+          user = globalStorage.perfiles.find((p: Perfil) => p.rol === 'admin')
+        }
+      }
       if (user) {
+        currentMockUser = {
+          id: user.id,
+          email: email,
+          user_metadata: { nombre: user.nombre }
+        }
         return {
-          data: {
-            user: {
-              id: user.id,
-              email: email,
-              user_metadata: { nombre: user.nombre }
-            }
-          },
+          data: { user: currentMockUser },
           error: null
         }
       }
@@ -292,7 +387,32 @@ export const mockSupabase = {
     },
 
     async signOut() {
+      currentMockUser = {
+        id: 'admin-id',
+        email: 'admin@controlflota.com',
+        user_metadata: { nombre: 'Administrador Principal' }
+      }
       return { error: null }
+    },
+
+    admin: {
+      async createUser({ email, password, user_metadata }: any) {
+        const newId = 'user-' + Math.random().toString(36).substr(2, 9)
+        const nombre = user_metadata?.nombre || email.split('@')[0]
+        return {
+          data: {
+            user: {
+              id: newId,
+              email,
+              user_metadata: { nombre }
+            }
+          },
+          error: null
+        }
+      },
+      async deleteUser(id: string) {
+        return { data: { user: null }, error: null }
+      }
     },
 
     onAuthStateChange(callback: any) {

@@ -31,7 +31,7 @@ export default function NavBar({ alertas, rol }: { alertas: number; rol: 'admin'
     <header className="sticky top-0 z-50 border-b border-[var(--nav-border)] bg-[var(--nav-bg)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--nav-bg)]/80">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 md:px-8">
         {/* Logo / Nombre de la Aplicación */}
-        <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+        <Link href={rol === 'piloto' ? '/piloto' : '/'} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/20">
             <Car className="h-5 w-5" />
           </div>

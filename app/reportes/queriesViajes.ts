@@ -11,6 +11,8 @@ export type ViajeReporte = {
   hora_llegada: string | null
   estado: string
   km_recorridos: number | null
+  destino?: string | null
+  observaciones?: string | null
 }
 
 export async function obtenerViajes({
@@ -26,7 +28,7 @@ export async function obtenerViajes({
 
   let query = supabase
     .from('registros_viaje')
-    .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculo_id, piloto_id, vehiculos(placa)')
+    .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculo_id, piloto_id, piloto_nombre, destino, observaciones, vehiculos(placa)')
     .gte('fecha', desde)
     .lte('fecha', hasta)
     .order('fecha', { ascending: false })
@@ -38,7 +40,7 @@ export async function obtenerViajes({
   if (error) throw new Error(error.message)
 
   const filas = (data ?? []) as any[]
-  const pilotoIds = [...new Set(filas.map((f) => f.piloto_id))]
+  const pilotoIds = [...new Set(filas.map((f) => f.piloto_id).filter(Boolean))]
 
   const { data: perfiles } = pilotoIds.length
     ? await supabase.from('perfiles').select('id, nombre').in('id', pilotoIds)
@@ -50,12 +52,14 @@ export async function obtenerViajes({
     id: r.id,
     fecha: r.fecha,
     placa: r.vehiculos?.placa ?? '—',
-    piloto: nombrePorId.get(r.piloto_id) ?? '—',
+    piloto: r.piloto_nombre || nombrePorId.get(r.piloto_id) || '—',
     km_salida: Number(r.km_salida),
     km_llegada: r.km_llegada != null ? Number(r.km_llegada) : null,
     hora_salida: r.hora_salida,
     hora_llegada: r.hora_llegada,
     estado: r.estado,
     km_recorridos: r.km_llegada != null ? Number(r.km_llegada) - Number(r.km_salida) : null,
+    destino: r.destino,
+    observaciones: r.observaciones,
   }))
 }
