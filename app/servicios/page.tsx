@@ -38,7 +38,7 @@ export default async function ServiciosPage({
   let query = supabase
     .from('servicios')
     .select(
-      'id, fecha, km_al_servicio, tipo_trabajo, tipo, costo, observaciones, dias_en_taller, motivo_taller, vehiculo_id, vehiculos(placa, marca, modelo)'
+      'id, fecha, km_al_servicio, tipo_trabajo, tipo, costo, observaciones, dias_en_taller, motivo_taller, evidencias, vehiculo_id, vehiculos(placa, marca, modelo)'
     )
     .order('fecha', { ascending: false })
 

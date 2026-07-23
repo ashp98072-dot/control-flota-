@@ -74,6 +74,7 @@ export interface Servicio {
   observaciones: string
   dias_en_taller: number | null
   motivo_taller: string | null
+  evidencias?: any[] | string | null
   vehiculos?: {
     placa: string
     marca: string

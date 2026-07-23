@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { actualizarServicio } from './actions'
+import EvidenciasUploader, { EvidenciaItem } from './EvidenciasUploader'
 
 type Servicio = {
   id: string
@@ -12,16 +13,32 @@ type Servicio = {
   tipo: string
   costo: number
   observaciones: string | null
+  evidencias?: any
 }
 
 export default function BotonEditarServicio({ servicio }: { servicio: Servicio }) {
   const [abierto, setAbierto] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const inicialEvidencias: EvidenciaItem[] = Array.isArray(servicio.evidencias)
+    ? servicio.evidencias
+    : typeof servicio.evidencias === 'string'
+    ? (() => {
+        try {
+          return JSON.parse(servicio.evidencias)
+        } catch {
+          return []
+        }
+      })()
+    : []
+
+  const [evidencias, setEvidencias] = useState<EvidenciaItem[]>(inicialEvidencias)
   const router = useRouter()
 
   async function handleSubmit(formData: FormData) {
     setError(null)
+    formData.set('evidencias_json', JSON.stringify(evidencias))
     setLoading(true)
     const res = await actualizarServicio(servicio.id, formData)
     setLoading(false)
@@ -123,6 +140,8 @@ export default function BotonEditarServicio({ servicio }: { servicio: Servicio }
                   className="border p-2 rounded w-full"
                 />
               </div>
+
+              <EvidenciasUploader evidencias={evidencias} onChange={setEvidencias} />
 
               <div className="flex gap-2 justify-end mt-2">
                 <button

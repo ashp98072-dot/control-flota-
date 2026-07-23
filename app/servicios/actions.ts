@@ -65,7 +65,17 @@ export async function crearServicio(formData: FormData) {
 
   const motivo_taller = vehiculoInfo?.en_taller ? vehiculoInfo.motivo_taller : null
 
-  const { error } = await supabase.from('servicios').insert({
+  const evidenciasRaw = (formData.get('evidencias_json') as string) || null
+  let evidencias = null
+  if (evidenciasRaw) {
+    try {
+      evidencias = JSON.parse(evidenciasRaw)
+    } catch {
+      console.error('Error parseando evidencias_json')
+    }
+  }
+
+  const insertData: any = {
     vehiculo_id,
     fecha,
     km_al_servicio,
@@ -76,7 +86,19 @@ export async function crearServicio(formData: FormData) {
     fecha_entrada_taller,
     dias_en_taller,
     motivo_taller,
-  })
+  }
+
+  if (evidencias) {
+    insertData.evidencias = evidencias
+  }
+
+  let { error } = await supabase.from('servicios').insert(insertData)
+
+  if (error && (error.message?.includes('evidencias') || error.code === 'PGRST204')) {
+    delete insertData.evidencias
+    const retry = await supabase.from('servicios').insert(insertData)
+    error = retry.error
+  }
 
   if (error) {
     console.error('crearServicio', error)
@@ -116,17 +138,42 @@ export async function actualizarServicio(id: string, formData: FormData) {
     return { error: 'Tipo de servicio inválido' }
   }
 
-  const { error } = await supabase
+  const evidenciasRaw = (formData.get('evidencias_json') as string) || null
+  let evidencias = null
+  if (evidenciasRaw) {
+    try {
+      evidencias = JSON.parse(evidenciasRaw)
+    } catch {
+      console.error('Error parseando evidencias_json')
+    }
+  }
+
+  const updateData: any = {
+    fecha,
+    km_al_servicio,
+    tipo_trabajo,
+    costo,
+    observaciones,
+    tipo,
+  }
+
+  if (evidencias !== null) {
+    updateData.evidencias = evidencias
+  }
+
+  let { error } = await supabase
     .from('servicios')
-    .update({
-      fecha,
-      km_al_servicio,
-      tipo_trabajo,
-      costo,
-      observaciones,
-      tipo,
-    })
+    .update(updateData)
     .eq('id', id)
+
+  if (error && (error.message?.includes('evidencias') || error.code === 'PGRST204')) {
+    delete updateData.evidencias
+    const retry = await supabase
+      .from('servicios')
+      .update(updateData)
+      .eq('id', id)
+    error = retry.error
+  }
 
   if (error) {
     console.error('actualizarServicio', error)

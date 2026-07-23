@@ -2,6 +2,7 @@
 
 import { useState, useRef, useMemo } from 'react'
 import { crearServicio } from './actions'
+import EvidenciasUploader, { EvidenciaItem } from './EvidenciasUploader'
 
 type Vehiculo = {
   id: string
@@ -25,6 +26,7 @@ export default function FormularioServicio({ vehiculos }: { vehiculos: Vehiculo[
   const [loading, setLoading] = useState(false)
   const [vehiculoId, setVehiculoId] = useState('')
   const [fecha, setFecha] = useState('')
+  const [evidencias, setEvidencias] = useState<EvidenciaItem[]>([])
   const formRef = useRef<HTMLFormElement>(null)
 
   const vehiculoSeleccionado = useMemo(
@@ -50,6 +52,10 @@ export default function FormularioServicio({ vehiculos }: { vehiculos: Vehiculo[
       return
     }
 
+    if (evidencias.length > 0) {
+      formData.set('evidencias_json', JSON.stringify(evidencias))
+    }
+
     setLoading(true)
     const res = await crearServicio(formData)
     setLoading(false)
@@ -59,6 +65,7 @@ export default function FormularioServicio({ vehiculos }: { vehiculos: Vehiculo[
       formRef.current?.reset()
       setVehiculoId('')
       setFecha('')
+      setEvidencias([])
     }
   }
 
@@ -209,10 +216,12 @@ export default function FormularioServicio({ vehiculos }: { vehiculos: Vehiculo[
         </p>
       </div>
 
+      <EvidenciasUploader evidencias={evidencias} onChange={setEvidencias} />
+
       <button
         type="submit"
         disabled={loading}
-        className="bg-black text-white p-2 rounded disabled:opacity-50"
+        className="bg-black text-white p-2 rounded disabled:opacity-50 mt-1"
       >
         {loading ? 'Guardando...' : 'Guardar servicio'}
       </button>
