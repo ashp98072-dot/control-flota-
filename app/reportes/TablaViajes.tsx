@@ -5,10 +5,48 @@ function formatearHora(iso: string | null) {
   return new Date(iso).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-export default function TablaViajes({ viajes }: { viajes: ViajeReporte[] }) {
+export default function TablaViajes({
+  viajes,
+  desde,
+  hasta,
+  vehiculoId,
+}: {
+  viajes: ViajeReporte[]
+  desde?: string
+  hasta?: string
+  vehiculoId?: string
+}) {
+  const totalKm = viajes.reduce((acc, v) => acc + (v.km_recorridos || 0), 0)
+  const viajesEnCurso = viajes.filter((v) => v.estado === 'abierto').length
+
+  const params = new URLSearchParams()
+  if (desde) params.set('desde', desde)
+  if (hasta) params.set('hasta', hasta)
+  if (vehiculoId) params.set('vehiculo', vehiculoId)
+
   return (
-    <div className="grid gap-2">
-      <h2 className="font-semibold border-b border-[var(--card-border)] pb-1">Registro de viajes (pilotos)</h2>
+    <div className="grid gap-3 pt-4 border-t border-[var(--card-border)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--card-border)] pb-2">
+        <div>
+          <h2 className="font-bold text-base text-[var(--foreground)]">
+            Registro y Control de Viajes (Pilotos)
+          </h2>
+          <p className="text-xs text-[var(--muted)] mt-0.5">
+            Total en periodo: <strong>{viajes.length}</strong> viajes | En curso:{' '}
+            <strong>{viajesEnCurso}</strong> | Recorrido acumulado:{' '}
+            <strong className="text-emerald-500">{totalKm.toLocaleString()} km</strong>
+          </p>
+        </div>
+
+        {desde && hasta && (
+          <a
+            href={`/reportes/exportar/viajes-excel?${params.toString()}`}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-600/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            📊 Exportar Viajes (Excel)
+          </a>
+        )}
+      </div>
 
       {viajes.length === 0 && (
         <p className="text-sm text-[var(--muted)]">No hay viajes registrados en este periodo.</p>

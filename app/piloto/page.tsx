@@ -34,37 +34,33 @@ export default async function PilotoPage() {
     km_actual: kmPorVehiculo.get(v.id) ?? 0,
   }))
 
-  let { data: viajeAbierto, error: errViajeAbierto } = await supabase
+  let { data: viajesAbiertos, error: errViajesAbiertos } = await supabase
     .from('registros_viaje')
-    .select('id, km_salida, hora_salida, piloto_nombre, destino, vehiculos(id, placa, marca, modelo)')
-    .eq('piloto_id', user.id)
+    .select('id, km_salida, hora_salida, piloto_nombre, destino, vehiculo_id, vehiculos(id, placa, marca, modelo)')
     .eq('estado', 'abierto')
-    .maybeSingle()
+    .order('hora_salida', { ascending: false })
 
-  if (errViajeAbierto) {
-    const { data: retryViaje } = await supabase
+  if (errViajesAbiertos) {
+    const { data: retryViajes } = await supabase
       .from('registros_viaje')
-      .select('id, km_salida, hora_salida, vehiculos(id, placa, marca, modelo)')
-      .eq('piloto_id', user.id)
+      .select('id, km_salida, hora_salida, vehiculo_id, vehiculos(id, placa, marca, modelo)')
       .eq('estado', 'abierto')
-      .maybeSingle()
-    viajeAbierto = retryViaje
+      .order('hora_salida', { ascending: false })
+    viajesAbiertos = retryViajes
   }
 
   let { data: historialReciente, error: errHistorial } = await supabase
     .from('registros_viaje')
     .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, piloto_nombre, estado, destino, vehiculos(placa, marca, modelo)')
-    .eq('piloto_id', user.id)
     .order('hora_salida', { ascending: false })
-    .limit(5)
+    .limit(8)
 
   if (errHistorial) {
     const { data: retryHistorial } = await supabase
       .from('registros_viaje')
       .select('id, fecha, km_salida, km_llegada, hora_salida, hora_llegada, estado, vehiculos(placa, marca, modelo)')
-      .eq('piloto_id', user.id)
       .order('hora_salida', { ascending: false })
-      .limit(5)
+      .limit(8)
     historialReciente = retryHistorial
   }
 
@@ -75,22 +71,22 @@ export default async function PilotoPage() {
       <div className="border-b border-[var(--nav-border)] pb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-[var(--foreground)]">
-            Módulo del Piloto
+            Módulo de Control de Unidades (Pilotos)
           </h1>
           <p className="text-xs text-[var(--nav-text)] mt-1">
-            Módulo de Control de Unidades. Registra la salida o entrada e ingresa tu nombre en cada formulario.
+            Registra la salida o entrada de cualquier unidad ingresando tu nombre completo.
           </p>
         </div>
         <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 font-bold">
-          Piloto Activo
+          Modo Multiusuario
         </span>
       </div>
 
       <FormularioPiloto
         vehiculos={vehiculosConKm}
-        viajeAbierto={viajeAbierto as any}
-        nombrePilotoDefault={nombrePiloto}
-        historialReciente={historialReciente as any[] ?? []}
+        viajesAbiertos={(viajesAbiertos as any[]) ?? []}
+        nombrePilotoDefault=""
+        historialReciente={(historialReciente as any[]) ?? []}
       />
     </div>
   )

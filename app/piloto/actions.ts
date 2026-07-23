@@ -14,6 +14,42 @@ export async function registrarSalida(formData: FormData) {
     const destino = (formData.get('destino') as string)?.trim() || ''
 
     if (!vehiculo_id || !Number.isFinite(km_salida)) return { error: 'Faltan campos obligatorios' }
+    if (!piloto_nombre) return { error: 'Ingresa el nombre del piloto o responsable' }
+
+    // 1. Validar que la unidad no esté ya en ruta
+    const { data: viajeVehiculoActivo } = await supabase
+      .from('registros_viaje')
+      .select('id, vehiculos(placa)')
+      .eq('vehiculo_id', vehiculo_id)
+      .eq('estado', 'abierto')
+      .maybeSingle()
+
+    if (viajeVehiculoActivo) {
+      const placa = (viajeVehiculoActivo as any)?.vehiculos?.placa || 'esta unidad'
+      return {
+        error: `La unidad ${placa} ya se encuentra actualmente en ruta con un viaje abierto. Debes registrar su llegada primero.`
+      }
+    }
+
+    // 2. Validar que el piloto no tenga un viaje activo en curso
+    const { data: viajesAbiertos } = await supabase
+      .from('registros_viaje')
+      .select('id, piloto_nombre, vehiculos(placa)')
+      .eq('estado', 'abierto')
+
+    if (viajesAbiertos && viajesAbiertos.length > 0) {
+      const pilotoNormalizado = piloto_nombre.toLowerCase()
+      const viajeExistente = viajesAbiertos.find(
+        (v: any) => (v.piloto_nombre || '').trim().toLowerCase() === pilotoNormalizado
+      )
+
+      if (viajeExistente) {
+        const placaConflictiva = (viajeExistente as any)?.vehiculos?.placa || 'otra unidad'
+        return {
+          error: `El piloto "${piloto_nombre}" ya tiene un viaje activo en curso con la unidad ${placaConflictiva}. Una misma persona no puede conducir dos vehículos al mismo tiempo. Debes registrar su llegada primero.`
+        }
+      }
+    }
 
     // Try RPC first
     const { error: rpcErr } = await supabase.rpc('registrar_salida_viaje', {

@@ -141,7 +141,7 @@ export default async function ReportesPage({
       ))}
 
       {errorViajes && <p className="text-red-500">Error cargando viajes: {errorViajes}</p>}
-      <TablaViajes viajes={viajes} />
+      <TablaViajes viajes={viajes} desde={desde} hasta={hasta} vehiculoId={vehiculo} />
     </div>
   )
 }
