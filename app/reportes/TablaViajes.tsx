@@ -39,12 +39,20 @@ export default function TablaViajes({
         </div>
 
         {desde && hasta && (
-          <a
-            href={`/reportes/exportar/viajes-excel?${params.toString()}`}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-600/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1.5 self-start sm:self-auto"
-          >
-            📊 Exportar Viajes (Excel)
-          </a>
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <a
+              href={`/reportes/exportar/viajes-pdf?${params.toString()}`}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg border border-red-600/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors inline-flex items-center gap-1.5"
+            >
+              📄 Exportar Viajes (PDF)
+            </a>
+            <a
+              href={`/reportes/exportar/viajes-excel?${params.toString()}`}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-600/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1.5"
+            >
+              📊 Exportar Viajes (Excel)
+            </a>
+          </div>
         )}
       </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { registrarSalida, registrarLlegada } from './actions'
-import { Car, Gauge, MapPin, User, ArrowRight, AlertCircle, CheckCircle2, History, Clock, Navigation } from 'lucide-react'
+import { Car, Gauge, MapPin, User, ArrowRight, AlertCircle, CheckCircle2, History, Clock, Navigation, Search } from 'lucide-react'
 
 type VehiculoConKm = {
   id: string
@@ -67,8 +67,28 @@ export default function FormularioPiloto({
   const [pilotoLlegadaNombre, setPilotoLlegadaNombre] = useState<string>('')
   const [kmLlegadaInput, setKmLlegadaInput] = useState<string>('')
   const [observacionesInput, setObservacionesInput] = useState<string>('')
+  const [busquedaLlegada, setBusquedaLlegada] = useState<string>('')
 
   const router = useRouter()
+
+  // Filter arrival trips by plate (placa), driver name (piloto), or brand/model
+  const viajesFiltradosLlegada = viajesAbiertos.filter((v) => {
+    if (!busquedaLlegada.trim()) return true
+    const q = busquedaLlegada.trim().toLowerCase()
+    const placa = (v.vehiculos?.placa || '').toLowerCase()
+    const marca = (v.vehiculos?.marca || '').toLowerCase()
+    const modelo = (v.vehiculos?.modelo || '').toLowerCase()
+    const piloto = (v.piloto_nombre || '').toLowerCase()
+    const destino = (v.destino || '').toLowerCase()
+
+    return (
+      placa.includes(q) ||
+      piloto.includes(q) ||
+      marca.includes(q) ||
+      modelo.includes(q) ||
+      destino.includes(q)
+    )
+  })
 
   // Find active vehicles on route
   const vehiculosEnRutaIds = new Set(
@@ -404,55 +424,99 @@ export default function FormularioPiloto({
             </div>
           ) : (
             <form onSubmit={handleLlegada} className="space-y-4">
-              {/* Trip Selector Cards / List */}
-              <div>
-                <label className="block text-xs font-bold text-[var(--foreground)] uppercase tracking-wider mb-2">
-                  Selecciona la unidad que está ingresando
-                </label>
-                <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
-                  {viajesAbiertos.map((viaje) => {
-                    const isSelected = viaje.id === (selectedViajeLlegadaId || viajeSeleccionadoLlegada?.id)
-                    const placa = viaje.vehiculos?.placa || 'Placa'
-                    const marca = viaje.vehiculos?.marca || ''
-                    const modelo = viaje.vehiculos?.modelo || ''
-
-                    return (
-                      <button
-                        key={viaje.id}
-                        type="button"
-                        onClick={() => handleViajeLlegadaSelect(viaje)}
-                        className={`p-3 rounded-xl text-left border transition-all flex items-center justify-between gap-2 ${
-                          isSelected
-                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20'
-                            : 'bg-[var(--background)] border-[var(--nav-border)] hover:border-amber-500/50'
-                        }`}
-                      >
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <strong className="text-xs font-bold text-[var(--foreground)]">
-                              {placa} — {marca} {modelo}
-                            </strong>
-                          </div>
-                          <p className="text-[11px] text-[var(--nav-text)]">
-                            Piloto salida: <span className="text-[var(--foreground)] font-medium">{viaje.piloto_nombre || 'Piloto'}</span>
-                            {viaje.destino ? ` | Destino: ${viaje.destino}` : ''}
-                          </p>
-                        </div>
-                        <div className="text-right text-[11px]">
-                          <span className="block font-mono font-bold text-[var(--foreground)]">
-                            {viaje.km_salida.toLocaleString()} km
-                          </span>
-                          <span className="text-[10px] text-[var(--nav-text)]">
-                            {new Date(viaje.hora_salida).toLocaleTimeString('es-GT', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                      </button>
-                    )
-                  })}
+              {/* Search Filter & Trip Selector Cards */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">
+                    Selecciona o busca la unidad que está ingresando
+                  </label>
+                  {busquedaLlegada && (
+                    <span className="text-[11px] font-semibold text-amber-500">
+                      {viajesFiltradosLlegada.length} resultado(s)
+                    </span>
+                  )}
                 </div>
+
+                {/* Search Bar Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--nav-text)]" />
+                  <input
+                    type="text"
+                    value={busquedaLlegada}
+                    onChange={(e) => setBusquedaLlegada(e.target.value)}
+                    placeholder="Filtrar por número de placa (ej: 495DSA) o por nombre del piloto..."
+                    className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-[var(--input-border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-amber-500/20"
+                  />
+                  {busquedaLlegada && (
+                    <button
+                      type="button"
+                      onClick={() => setBusquedaLlegada('')}
+                      className="absolute right-2.5 top-2 text-xs text-[var(--nav-text)] hover:text-[var(--foreground)] font-bold px-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {viajesFiltradosLlegada.length === 0 ? (
+                  <div className="p-4 text-center border border-dashed border-[var(--nav-border)] rounded-xl bg-[var(--background)]">
+                    <p className="text-xs font-bold text-[var(--foreground)]">
+                      No se encontraron viajes en curso con la búsqueda "{busquedaLlegada}"
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setBusquedaLlegada('')}
+                      className="text-[11px] text-amber-500 hover:underline font-bold mt-1"
+                    >
+                      Limpiar filtro de búsqueda
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
+                    {viajesFiltradosLlegada.map((viaje) => {
+                      const isSelected = viaje.id === (selectedViajeLlegadaId || viajeSeleccionadoLlegada?.id)
+                      const placa = viaje.vehiculos?.placa || 'Placa'
+                      const marca = viaje.vehiculos?.marca || ''
+                      const modelo = viaje.vehiculos?.modelo || ''
+
+                      return (
+                        <button
+                          key={viaje.id}
+                          type="button"
+                          onClick={() => handleViajeLlegadaSelect(viaje)}
+                          className={`p-3 rounded-xl text-left border transition-all flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20'
+                              : 'bg-[var(--background)] border-[var(--nav-border)] hover:border-amber-500/50'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <strong className="text-xs font-bold text-[var(--foreground)]">
+                                {placa} — {marca} {modelo}
+                              </strong>
+                            </div>
+                            <p className="text-[11px] text-[var(--nav-text)]">
+                              Piloto salida: <span className="text-[var(--foreground)] font-medium">{viaje.piloto_nombre || 'Piloto'}</span>
+                              {viaje.destino ? ` | Destino: ${viaje.destino}` : ''}
+                            </p>
+                          </div>
+                          <div className="text-right text-[11px]">
+                            <span className="block font-mono font-bold text-[var(--foreground)]">
+                              {viaje.km_salida.toLocaleString()} km
+                            </span>
+                            <span className="text-[10px] text-[var(--nav-text)]">
+                              {new Date(viaje.hora_salida).toLocaleTimeString('es-GT', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {viajeSeleccionadoLlegada && (
